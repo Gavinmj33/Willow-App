@@ -39,7 +39,7 @@ Built with:
 ### Requirements
 - Xcode 15.0+
 - iOS 17.0+
-- Swift 5.9+
+- Swift 6.0+
 
 ### Building
 1. Clone the repository
