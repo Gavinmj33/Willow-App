@@ -2,20 +2,13 @@
 //  AffirmationsView.swift
 //  Willow
 //
-//  Created by Matthew Gavin on 12/14/25.
-//
-
-//
-//  AffirmationsView.swift
-//  Willow
-//
-//  Created by Matthew Gavin on 12/14/25.
-//
 
 import SwiftUI
 
 struct AffirmationsView: View {
     @State private var showSettings = false
+    @State private var showShareSheet = false
+    @State private var shareImage: UIImage?
     @StateObject private var quoteManager = QuoteManager.shared
     
     var currentQuote: Quote? {
@@ -99,9 +92,19 @@ struct AffirmationsView: View {
             TimeOfDayVisuals(period: currentPeriod)
             
             VStack(spacing: 20) {
-                // Header with settings button
+                // Header with share and settings buttons
                 HStack {
                     Spacer()
+                    
+                    if let quote = currentQuote {
+                        Button {
+                            shareQuote(quote)
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.title2)
+                                .foregroundStyle(theme.text.opacity(0.7))
+                        }
+                    }
                     
                     Button {
                         showSettings = true
@@ -136,6 +139,19 @@ struct AffirmationsView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let image = shareImage {
+                ShareSheet(items: [image])
+            }
+        }
+    }
+    
+    private func shareQuote(_ quote: Quote) {
+        // Render the quote card to an image
+        if let image = renderQuoteCard(quote: quote, period: currentPeriod) {
+            shareImage = image
+            showShareSheet = true
         }
     }
 }
