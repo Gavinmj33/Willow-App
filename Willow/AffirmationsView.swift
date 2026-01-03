@@ -140,9 +140,16 @@ struct AffirmationsView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
-        .sheet(isPresented: $showShareSheet) {
+        .sheet(isPresented: $showShareSheet, onDismiss: {
+            shareImage = nil
+        }) {
             if let image = shareImage {
                 ShareSheet(items: [image])
+            }
+        }
+        .onChange(of: shareImage) { _, newImage in
+            if newImage != nil {
+                showShareSheet = true
             }
         }
     }
@@ -151,7 +158,7 @@ struct AffirmationsView: View {
         // Render the quote card to an image
         if let image = renderQuoteCard(quote: quote, period: currentPeriod) {
             shareImage = image
-            showShareSheet = true
+            // Sheet presentation is triggered by onChange above
         }
     }
 }
