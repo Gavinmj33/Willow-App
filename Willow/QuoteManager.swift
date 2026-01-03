@@ -7,7 +7,7 @@
 import Foundation
 import Combine
 
-class QuoteManager: ObservableObject {
+class QuoteManager: ObservableObject, QuoteProviding {
     static let shared = QuoteManager()
     
     @Published private(set) var quotes: [Quote] = []

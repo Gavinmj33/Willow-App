@@ -2,7 +2,7 @@
 //  BreathingExerciseViewModel.swift
 //  Willow
 //
-//  ViewModel for breathing exercise functionality following MVVM principles.
+//  ViewModel for breathing exercise functionality following SOLID principles.
 //
 
 import SwiftUI
@@ -108,15 +108,13 @@ final class BreathingExerciseViewModel: ObservableObject {
     @Published private(set) var totalTimeRemaining = 0
     @Published private(set) var circleScale: CGFloat = 0.5
     @Published private(set) var showCompletion = false
-
-    // MARK: - Theme
-
     @Published private(set) var theme: Theme
 
-    // MARK: - Private Properties
+    // MARK: - Private Properties (Protocol-based Dependencies)
 
     private var timerCancellable: AnyCancellable?
-    private let themeManager: ThemeManager
+    private let themeProvider: ThemeProviding
+    private let hapticService: HapticFeedbackProviding
 
     // MARK: - Computed Properties
 
@@ -130,11 +128,15 @@ final class BreathingExerciseViewModel: ObservableObject {
         return String(format: "%d:%02d", minutes, seconds)
     }
 
-    // MARK: - Initialization
+    // MARK: - Initialization (Dependency Injection)
 
-    init(themeManager: ThemeManager = .shared) {
-        self.themeManager = themeManager
-        self.theme = themeManager.currentTheme
+    init(
+        themeProvider: ThemeProviding = ThemeManager.shared,
+        hapticService: HapticFeedbackProviding = HapticService.shared
+    ) {
+        self.themeProvider = themeProvider
+        self.hapticService = hapticService
+        self.theme = themeProvider.currentTheme
     }
 
     // MARK: - Session Control
@@ -148,7 +150,7 @@ final class BreathingExerciseViewModel: ObservableObject {
         showCompletion = false
 
         updateCircleScale(for: currentPhase.type, duration: currentPhase.duration)
-        triggerHaptic()
+        hapticService.triggerImpact(style: .light)
         startTimer()
     }
 
@@ -174,8 +176,8 @@ final class BreathingExerciseViewModel: ObservableObject {
     }
 
     func refreshTheme() {
-        themeManager.refreshTheme()
-        theme = themeManager.currentTheme
+        themeProvider.refreshTheme()
+        theme = themeProvider.currentTheme
     }
 
     // MARK: - Private Methods
@@ -213,14 +215,14 @@ final class BreathingExerciseViewModel: ObservableObject {
         stopTimer()
         isActive = false
         showCompletion = true
-        triggerHaptic(style: .success)
+        hapticService.triggerNotification(type: .success)
     }
 
     private func advanceToNextPhase() {
         currentPhaseIndex = (currentPhaseIndex + 1) % selectedPattern.phases.count
         phaseTimeRemaining = currentPhase.duration
         updateCircleScale(for: currentPhase.type, duration: currentPhase.duration)
-        triggerHaptic()
+        hapticService.triggerImpact(style: .light)
     }
 
     private func updateCircleScale(for phaseType: BreathingPhase.PhaseType, duration: Int) {
@@ -234,16 +236,6 @@ final class BreathingExerciseViewModel: ObservableObject {
 
         withAnimation(.easeInOut(duration: Double(duration))) {
             circleScale = targetScale
-        }
-    }
-
-    private func triggerHaptic(style: UINotificationFeedbackGenerator.FeedbackType? = nil) {
-        if let style = style {
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(style)
-        } else {
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.impactOccurred()
         }
     }
 }

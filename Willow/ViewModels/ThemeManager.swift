@@ -2,7 +2,7 @@
 //  ThemeManager.swift
 //  Willow
 //
-//  Centralizes all theme-related logic following MVVM principles.
+//  Centralizes all theme-related logic following SOLID principles.
 //
 
 import SwiftUI
@@ -89,20 +89,23 @@ struct Theme {
 // MARK: - ThemeManager
 
 @MainActor
-final class ThemeManager: ObservableObject {
+final class ThemeManager: ObservableObject, ThemeProviding {
     static let shared = ThemeManager()
 
     @Published private(set) var currentPeriod: Quote.TimePeriod
     @Published private(set) var currentTheme: Theme
 
-    private init() {
-        let period = ThemeManager.calculateCurrentPeriod()
+    private let timeProvider: TimeProviding
+
+    init(timeProvider: TimeProviding = TimeProvider.shared) {
+        self.timeProvider = timeProvider
+        let period = Self.calculatePeriod(from: timeProvider.currentHour())
         self.currentPeriod = period
         self.currentTheme = Theme.forPeriod(period)
     }
 
     func refreshTheme() {
-        let period = ThemeManager.calculateCurrentPeriod()
+        let period = Self.calculatePeriod(from: timeProvider.currentHour())
         if period != currentPeriod {
             currentPeriod = period
             currentTheme = Theme.forPeriod(period)
@@ -113,8 +116,7 @@ final class ThemeManager: ObservableObject {
         Theme.forPeriod(period)
     }
 
-    static func calculateCurrentPeriod() -> Quote.TimePeriod {
-        let hour = Calendar.current.component(.hour, from: Date())
+    private static func calculatePeriod(from hour: Int) -> Quote.TimePeriod {
         switch hour {
         case 6..<12:
             return .morning

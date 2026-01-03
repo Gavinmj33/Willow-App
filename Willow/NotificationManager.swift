@@ -8,7 +8,7 @@
 import Foundation
 import UserNotifications
 
-class NotificationManager {
+class NotificationManager: NotificationScheduling {
     static let shared = NotificationManager()
     
     enum TimePeriod: String, CaseIterable {

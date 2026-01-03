@@ -2,7 +2,7 @@
 //  AffirmationsViewModel.swift
 //  Willow
 //
-//  ViewModel for affirmations/quotes functionality following MVVM principles.
+//  ViewModel for affirmations/quotes functionality following SOLID principles.
 //
 
 import SwiftUI
@@ -18,33 +18,36 @@ final class AffirmationsViewModel: ObservableObject {
     @Published var showShareSheet = false
     @Published var shareImage: UIImage?
 
-    // MARK: - Private Properties
+    // MARK: - Private Properties (Protocol-based Dependencies)
 
-    private let quoteManager: QuoteManager
-    private let themeManager: ThemeManager
+    private let quoteProvider: QuoteProviding
+    private let themeProvider: ThemeProviding
 
-    // MARK: - Initialization
+    // MARK: - Initialization (Dependency Injection)
 
-    init(quoteManager: QuoteManager = .shared, themeManager: ThemeManager = .shared) {
-        self.quoteManager = quoteManager
-        self.themeManager = themeManager
-        self.currentPeriod = themeManager.currentPeriod
-        self.theme = themeManager.currentTheme
+    init(
+        quoteProvider: QuoteProviding = QuoteManager.shared,
+        themeProvider: ThemeProviding = ThemeManager.shared
+    ) {
+        self.quoteProvider = quoteProvider
+        self.themeProvider = themeProvider
+        self.currentPeriod = themeProvider.currentPeriod
+        self.theme = themeProvider.currentTheme
         refreshQuote()
     }
 
     // MARK: - Public Methods
 
     func refreshQuote() {
-        let period = quoteManager.getCurrentPeriod()
+        let period = quoteProvider.getCurrentPeriod()
         currentPeriod = period
-        currentQuote = quoteManager.getTodaysQuote(for: period)
+        currentQuote = quoteProvider.getTodaysQuote(for: period)
     }
 
     func refreshTheme() {
-        themeManager.refreshTheme()
-        currentPeriod = themeManager.currentPeriod
-        theme = themeManager.currentTheme
+        themeProvider.refreshTheme()
+        currentPeriod = themeProvider.currentPeriod
+        theme = themeProvider.currentTheme
         refreshQuote()
     }
 

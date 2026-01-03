@@ -2,7 +2,7 @@
 //  SettingsViewModel.swift
 //  Willow
 //
-//  ViewModel for settings/notifications functionality following MVVM principles.
+//  ViewModel for settings/notifications functionality following SOLID principles.
 //
 
 import SwiftUI
@@ -13,28 +13,28 @@ final class SettingsViewModel: ObservableObject {
 
     @Published var morningEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(morningEnabled, forKey: "morningEnabled")
+            storage.set(morningEnabled, forKey: "morningEnabled")
             handleToggle(enabled: morningEnabled, period: .morning, time: morningTimeStored)
         }
     }
 
     @Published var dayEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(dayEnabled, forKey: "dayEnabled")
+            storage.set(dayEnabled, forKey: "dayEnabled")
             handleToggle(enabled: dayEnabled, period: .day, time: dayTimeStored)
         }
     }
 
     @Published var eveningEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(eveningEnabled, forKey: "eveningEnabled")
+            storage.set(eveningEnabled, forKey: "eveningEnabled")
             handleToggle(enabled: eveningEnabled, period: .evening, time: eveningTimeStored)
         }
     }
 
     @Published var nightEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(nightEnabled, forKey: "nightEnabled")
+            storage.set(nightEnabled, forKey: "nightEnabled")
             handleToggle(enabled: nightEnabled, period: .night, time: nightTimeStored)
         }
     }
@@ -43,7 +43,7 @@ final class SettingsViewModel: ObservableObject {
 
     @Published var morningTimeStored: Double {
         didSet {
-            UserDefaults.standard.set(morningTimeStored, forKey: "morningTime")
+            storage.set(morningTimeStored, forKey: "morningTime")
             if morningEnabled {
                 scheduleNotification(for: .morning, at: morningTimeStored)
             }
@@ -52,7 +52,7 @@ final class SettingsViewModel: ObservableObject {
 
     @Published var dayTimeStored: Double {
         didSet {
-            UserDefaults.standard.set(dayTimeStored, forKey: "dayTime")
+            storage.set(dayTimeStored, forKey: "dayTime")
             if dayEnabled {
                 scheduleNotification(for: .day, at: dayTimeStored)
             }
@@ -61,7 +61,7 @@ final class SettingsViewModel: ObservableObject {
 
     @Published var eveningTimeStored: Double {
         didSet {
-            UserDefaults.standard.set(eveningTimeStored, forKey: "eveningTime")
+            storage.set(eveningTimeStored, forKey: "eveningTime")
             if eveningEnabled {
                 scheduleNotification(for: .evening, at: eveningTimeStored)
             }
@@ -70,7 +70,7 @@ final class SettingsViewModel: ObservableObject {
 
     @Published var nightTimeStored: Double {
         didSet {
-            UserDefaults.standard.set(nightTimeStored, forKey: "nightTime")
+            storage.set(nightTimeStored, forKey: "nightTime")
             if nightEnabled {
                 scheduleNotification(for: .night, at: nightTimeStored)
             }
@@ -95,25 +95,30 @@ final class SettingsViewModel: ObservableObject {
         timeRange(startHour: 21, startMinute: 0, endHour: 23, endMinute: 59)
     }
 
-    // MARK: - Private Properties
+    // MARK: - Private Properties (Protocol-based Dependencies)
 
-    private let notificationManager: NotificationManager
+    private let notificationScheduler: NotificationScheduling
+    private let storage: SettingsStoring
 
-    // MARK: - Initialization
+    // MARK: - Initialization (Dependency Injection)
 
-    init(notificationManager: NotificationManager = .shared) {
-        self.notificationManager = notificationManager
+    init(
+        notificationScheduler: NotificationScheduling = NotificationManager.shared,
+        storage: SettingsStoring = UserDefaultsStorage.shared
+    ) {
+        self.notificationScheduler = notificationScheduler
+        self.storage = storage
 
         // Load stored values
-        self.morningEnabled = UserDefaults.standard.bool(forKey: "morningEnabled")
-        self.dayEnabled = UserDefaults.standard.bool(forKey: "dayEnabled")
-        self.eveningEnabled = UserDefaults.standard.bool(forKey: "eveningEnabled")
-        self.nightEnabled = UserDefaults.standard.bool(forKey: "nightEnabled")
+        self.morningEnabled = storage.bool(forKey: "morningEnabled")
+        self.dayEnabled = storage.bool(forKey: "dayEnabled")
+        self.eveningEnabled = storage.bool(forKey: "eveningEnabled")
+        self.nightEnabled = storage.bool(forKey: "nightEnabled")
 
-        self.morningTimeStored = UserDefaults.standard.double(forKey: "morningTime").nonZeroOr(Self.defaultTime(hour: 7, minute: 0))
-        self.dayTimeStored = UserDefaults.standard.double(forKey: "dayTime").nonZeroOr(Self.defaultTime(hour: 12, minute: 0))
-        self.eveningTimeStored = UserDefaults.standard.double(forKey: "eveningTime").nonZeroOr(Self.defaultTime(hour: 18, minute: 0))
-        self.nightTimeStored = UserDefaults.standard.double(forKey: "nightTime").nonZeroOr(Self.defaultTime(hour: 21, minute: 0))
+        self.morningTimeStored = storage.double(forKey: "morningTime").nonZeroOr(Self.defaultTime(hour: 7, minute: 0))
+        self.dayTimeStored = storage.double(forKey: "dayTime").nonZeroOr(Self.defaultTime(hour: 12, minute: 0))
+        self.eveningTimeStored = storage.double(forKey: "eveningTime").nonZeroOr(Self.defaultTime(hour: 18, minute: 0))
+        self.nightTimeStored = storage.double(forKey: "nightTime").nonZeroOr(Self.defaultTime(hour: 21, minute: 0))
     }
 
     // MARK: - Public Methods
@@ -138,15 +143,15 @@ final class SettingsViewModel: ObservableObject {
 
     private func handleToggle(enabled: Bool, period: NotificationManager.TimePeriod, time: Double) {
         if enabled {
-            notificationManager.requestPermission()
-            notificationManager.scheduleNotification(for: period, at: Date(timeIntervalSince1970: time))
+            notificationScheduler.requestPermission()
+            notificationScheduler.scheduleNotification(for: period, at: Date(timeIntervalSince1970: time))
         } else {
-            notificationManager.cancelNotification(for: period)
+            notificationScheduler.cancelNotification(for: period)
         }
     }
 
     private func scheduleNotification(for period: NotificationManager.TimePeriod, at time: Double) {
-        notificationManager.scheduleNotification(for: period, at: Date(timeIntervalSince1970: time))
+        notificationScheduler.scheduleNotification(for: period, at: Date(timeIntervalSince1970: time))
     }
 
     private func timeRange(startHour: Int, startMinute: Int, endHour: Int, endMinute: Int) -> ClosedRange<Date> {
