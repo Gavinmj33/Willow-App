@@ -3,14 +3,7 @@
 //  Willow
 //
 //  Created by Matthew Gavin on 12/14/25.
-//
 
-//
-//  BreathingExerciseView.swift
-//  Willow
-//
-//  Created by Matthew Gavin on 12/14/25.
-//
 
 import SwiftUI
 import Combine
